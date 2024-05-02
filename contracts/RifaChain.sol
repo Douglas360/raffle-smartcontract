@@ -20,6 +20,7 @@ contract Rifa {
         address administrador;
         address ganhador;
         bool rifaFinalizada;
+        bool saldoSacado;
     }
 
     struct TransactionStruct {
@@ -99,6 +100,7 @@ contract Rifa {
             _quantidadeBilhete * _precoBilhete,
             msg.sender,
             address(0),
+            false,
             false
         );
 
@@ -182,7 +184,7 @@ contract Rifa {
         emit TaxaAdministrativaRecebida(administrador, valorTaxaAdministrativa);
     }
 
-    //administrador da rifa pode sacar o valor arrecadado da rifa descontando o valor do premio e a taxa, caso a rifa tenha sido finalizada
+    //dono da rifa pode sacar o valor arrecadado da rifa descontando o valor do premio e a taxa, caso a rifa tenha sido finalizada
     function sacarValorArrecadado(uint256 _idRifa) public {
         RifaInfo storage rifa = rifas[_idRifa];
         require(rifa.id != 0, unicode"Rifa não encontrada");
@@ -207,6 +209,7 @@ contract Rifa {
             valorTaxaAdministrativa;
 
         payable(msg.sender).transfer(valorLiquido);
+        rifa.saldoSacado = true;
         emit SaqueRealizado(msg.sender, valorLiquido);
 
         _entrouSacarValorArrecadado = false;
@@ -321,5 +324,30 @@ contract Rifa {
                 transactions[i].tx = _tx;
             }
         }
+    }
+
+    //Função para listar os bilhetes de um determinado address
+    function listarBilhetes(
+        address _address
+    ) public view returns (Bilhete[] memory) {
+        uint256 qntBilhetes = 0;
+        for (uint256 i = 1; i <= ultimaRifaId; i++) {
+            if (rifas[i].administrador == _address) {
+                qntBilhetes += rifas[i].quantidadeBilhete;
+            }
+        }
+
+        Bilhete[] memory bilhetesUsuario = new Bilhete[](qntBilhetes);
+        uint256 index = 0;
+        for (uint256 i = 1; i <= ultimaRifaId; i++) {
+            if (rifas[i].administrador == _address) {
+                for (uint256 j = 1; j <= rifas[i].quantidadeBilhete; j++) {
+                    bilhetesUsuario[index] = bilhetes[j];
+                    index++;
+                }
+            }
+        }
+
+        return bilhetesUsuario;
     }
 }
